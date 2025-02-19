@@ -7,52 +7,111 @@ use App\Entity\Tag;
 use App\Entity\User;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Longman\TelegramBot\Entities\Update;
+use Longman\TelegramBot\Exception\TelegramException;
+use Longman\TelegramBot\Request;
+use Longman\TelegramBot\Telegram;
+use Psr\Log\LoggerInterface;
 
 class TelegramBotService
 {
-    private string $apiUrl = 'https://api.telegram.org/bot';
-
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
         private readonly EntityManagerInterface $entityManager,
         private readonly string $token,
+        private readonly string $botUsername,
+        private readonly LoggerInterface $telegramLogger,
+        private readonly LoggerInterface $databaseLogger,
+        private readonly LoggerInterface $securityLogger,
     ) {
+        // Инициализируем Telegram API при создании сервиса
+        $this->initTelegram();
+        $this->telegramLogger->info('TelegramBotService initialized', [
+            'botUsername' => $this->botUsername,
+        ]);
     }
 
-    public function handleUpdate(array $update): void
+    private function initTelegram(): void
     {
-        if (isset($update['message'])) {
-            $this->handleMessage($update['message']);
+        try {
+            new Telegram($this->token, $this->botUsername);
+        } catch (TelegramException $e) {
+            $this->telegramLogger->error('Failed to initialize Telegram', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
         }
     }
 
-    private function handleMessage(array $message): void
+    public function handleUpdate(array $updateData): void
     {
-        $telegramId = $message['from']['id'];
-        $text = $message['text'] ?? '';
+        try {
+            $this->telegramLogger->debug('Received update', ['update' => $updateData]);
 
-        $user = $this->getOrCreateUser($telegramId, $message['from']['username'] ?? null);
+            $update = new Update($updateData);
+            $message = $update->getMessage();
 
-        if (str_starts_with($text, '/start')) {
-            $this->sendWelcomeMessage($telegramId);
-        } elseif (str_starts_with($text, '/add')) {
-            $this->handleAddLink($user, $text);
-        } elseif (str_starts_with($text, '/settime')) {
-            $this->handleSetTime($user, $text);
+            if (!$message) {
+                $this->telegramLogger->warning('Received update without message');
+
+                return;
+            }
+
+            $telegramId = (string) $message->getFrom()->getId();
+            $text = $message->getText() ?? '';
+
+            $this->telegramLogger->info('Processing message', [
+                'telegramId' => $telegramId,
+                'text' => $text,
+            ]);
+
+            $user = $this->getOrCreateUser(
+                $telegramId,
+                $message->getFrom()->getUsername()
+            );
+
+            if ('/start' === $text) {
+                $this->sendWelcomeMessage($telegramId);
+            } elseif (str_starts_with($text, '/add')) {
+                $this->handleAddLink($user, $text);
+            } elseif (str_starts_with($text, '/settime')) {
+                $this->handleSetTime($user, $text);
+            }
+        } catch (TelegramException $e) {
+            $this->telegramLogger->error('Error processing update', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
     }
 
     private function getOrCreateUser(string $telegramId, ?string $username): User
     {
-        $user = $this->entityManager->getRepository(User::class)->findOneBy(['telegramId' => $telegramId]);
+        $this->databaseLogger->debug('Looking for user', [
+            'telegramId' => $telegramId,
+            'username' => $username,
+        ]);
+
+        $user = $this->entityManager->getRepository(User::class)
+            ->findOneBy(['telegramId' => $telegramId]);
 
         if (!$user) {
+            $this->databaseLogger->info('Creating new user', [
+                'telegramId' => $telegramId,
+                'username' => $username,
+            ]);
+
             $user = new User();
             $user->setTelegramId($telegramId);
             $user->setUsername($username);
             $this->entityManager->persist($user);
             $this->entityManager->flush();
+
+            $this->securityLogger->info('New user registered', [
+                'telegramId' => $telegramId,
+                'username' => $username,
+            ]);
         }
 
         return $user;
@@ -60,45 +119,77 @@ class TelegramBotService
 
     public function sendMessage(string $chatId, string $text): void
     {
-        $this->httpClient->request('POST', $this->apiUrl.$this->token.'/sendMessage', [
-            'json' => [
+        try {
+            $this->telegramLogger->debug('Sending message', [
+                'chatId' => $chatId,
+                'text' => $text,
+            ]);
+
+            Request::sendMessage([
                 'chat_id' => $chatId,
                 'text' => $text,
                 'parse_mode' => 'HTML',
-            ],
-        ]);
+            ]);
+
+            $this->telegramLogger->info('Message sent successfully', [
+                'chatId' => $chatId,
+            ]);
+        } catch (TelegramException $e) {
+            $this->telegramLogger->error('Error sending message', [
+                'chatId' => $chatId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
     }
 
     private function handleAddLink(User $user, string $text): void
     {
-        // Парсинг URL и тегов из текста
         if (!preg_match('/\/add\s+(\S+)\s*(.*)/', $text, $matches)) {
-            $this->sendMessage($user->getTelegramId(), 'Пожалуйста, укажите URL и теги в формате: /add URL #тег1 #тег2');
+            $this->telegramLogger->warning('Invalid add link format', [
+                'text' => $text,
+                'userId' => $user->getId(),
+            ]);
+
+            $this->sendMessage(
+                $user->getTelegramId(),
+                'Пожалуйста, укажите URL и теги в формате: /add URL #тег1 #тег2'
+            );
 
             return;
         }
 
         $url = $matches[1];
-
-        // $matches[2] всегда существует после успешного preg_match
         preg_match_all('/#(\w+)/', $matches[2], $tagMatches);
-
-        // $tagMatches[1] всегда существует после preg_match_all
         $tagStrings = $tagMatches[1];
 
-        // Создание ссылки
+        $this->telegramLogger->info('Adding new link', [
+            'url' => $url,
+            'tags' => $tagStrings,
+            'userId' => $user->getId(),
+        ]);
+
         $link = new Link();
         $link->setUrl($url);
         $link->setUser($user);
 
-        // Добавление тегов
         foreach ($tagStrings as $tagString) {
+            $this->databaseLogger->debug('Processing tag', [
+                'tag' => $tagString,
+                'userId' => $user->getId(),
+            ]);
+
             $tag = $this->entityManager->getRepository(Tag::class)->findOneBy([
                 'name' => $tagString,
                 'user' => $user,
             ]) ?? new Tag();
 
             if (!$tag->getId()) {
+                $this->databaseLogger->info('Creating new tag', [
+                    'tag' => $tagString,
+                    'userId' => $user->getId(),
+                ]);
+
                 $tag->setName($tagString);
                 $tag->setUser($user);
                 $this->entityManager->persist($tag);
@@ -110,21 +201,38 @@ class TelegramBotService
         $this->entityManager->persist($link);
         $this->entityManager->flush();
 
+        $this->databaseLogger->info('Link saved successfully', [
+            'linkId' => $link->getId(),
+            'url' => $url,
+            'userId' => $user->getId(),
+        ]);
+
         $this->sendMessage($user->getTelegramId(), 'Ссылка успешно сохранена!');
     }
 
     private function handleSetTime(User $user, string $text): void
     {
-        preg_match('/\/settime\s+(\d{1,2}):(\d{2})/', $text, $matches);
+        if (!preg_match('/\/settime\s+(\d{1,2}):(\d{2})/', $text, $matches)) {
+            $this->telegramLogger->warning('Invalid time format', [
+                'text' => $text,
+                'userId' => $user->getId(),
+            ]);
 
-        if (3 !== count($matches)) {
-            $this->sendMessage($user->getTelegramId(), 'Пожалуйста, укажите время в формате: /settime ЧЧ:ММ');
+            $this->sendMessage(
+                $user->getTelegramId(),
+                'Пожалуйста, укажите время в формате: /settime ЧЧ:ММ'
+            );
 
             return;
         }
 
         $time = new DateTime();
         $time->setTime((int) $matches[1], (int) $matches[2]);
+
+        $this->databaseLogger->info('Setting notification time', [
+            'userId' => $user->getId(),
+            'time' => $time->format('H:i'),
+        ]);
 
         $user->setNotificationTime($time);
         $this->entityManager->flush();

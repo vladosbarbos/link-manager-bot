@@ -1,6 +1,7 @@
 parameters:
     app.telegram_bot_token: '%env(TELEGRAM_BOT_TOKEN)%'
     app.telegram_webhook_secret: '%env(TELEGRAM_WEBHOOK_SECRET)%'
+    app.telegram_bot_username: '%env(TELEGRAM_BOT_USERNAME)%'
 
 services:
     _defaults:
@@ -17,6 +18,10 @@ services:
     App\Service\TelegramBotService:
         arguments:
             $token: '%app.telegram_bot_token%'
+            $botUsername: '%app.telegram_bot_username%'
+            $telegramLogger: '@monolog.logger.telegram'
+            $databaseLogger: '@monolog.logger.database'
+            $securityLogger: '@monolog.logger.security'
 
     App\Command\SetupWebhookCommand:
         arguments:

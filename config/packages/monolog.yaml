@@ -1,0 +1,35 @@
+monolog:
+    channels: ['telegram', 'database', 'security']
+    handlers:
+        main:
+            type: rotating_file
+            path: "%kernel.logs_dir%/app.log"
+            level: debug
+            channels: ["!event"]
+            max_files: 10
+            formatter: monolog.formatter.json
+        telegram:
+            type: rotating_file
+            path: "%kernel.logs_dir%/telegram.log"
+            level: debug
+            channels: ["telegram"]
+            max_files: 10
+            formatter: monolog.formatter.json
+        database:
+            type: rotating_file
+            path: "%kernel.logs_dir%/database.log"
+            level: debug
+            channels: ["database"]
+            max_files: 10
+            formatter: monolog.formatter.json
+        security:
+            type: rotating_file
+            path: "%kernel.logs_dir%/security.log"
+            level: debug
+            channels: ["security"]
+            max_files: 10
+            formatter: monolog.formatter.json
+        console:
+            type: console
+            process_psr_3_messages: false
+            channels: ["!event", "!doctrine", "!console"] 
