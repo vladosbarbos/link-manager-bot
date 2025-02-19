@@ -11,15 +11,13 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class TelegramBotService
 {
-    private string $token;
     private string $apiUrl = 'https://api.telegram.org/bot';
 
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly EntityManagerInterface $entityManager,
-        private readonly string $telegramBotToken,
+        private readonly string $token,
     ) {
-        $this->token = $telegramBotToken;
     }
 
     public function handleUpdate(array $update): void
@@ -76,7 +74,7 @@ class TelegramBotService
         // Парсинг URL и тегов из текста
         preg_match('/\/add\s+(\S+)\s*(.*)/', $text, $matches);
 
-        if (count($matches) < 2) {
+        if (!isset($matches[1])) {
             $this->sendMessage($user->getTelegramId(), 'Пожалуйста, укажите URL и теги в формате: /add URL #тег1 #тег2');
 
             return;
@@ -84,7 +82,7 @@ class TelegramBotService
 
         $url = $matches[1];
         $tagStrings = [];
-        preg_match_all('/#(\w+)/', $matches[2], $tagMatches);
+        preg_match_all('/#(\w+)/', $matches[2] ?? '', $tagMatches);
 
         if (isset($tagMatches[1])) {
             $tagStrings = $tagMatches[1];
