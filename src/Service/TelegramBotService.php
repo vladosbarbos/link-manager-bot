@@ -72,9 +72,7 @@ class TelegramBotService
     private function handleAddLink(User $user, string $text): void
     {
         // Парсинг URL и тегов из текста
-        preg_match('/\/add\s+(\S+)\s*(.*)/', $text, $matches);
-
-        if (!isset($matches[1])) {
+        if (!preg_match('/\/add\s+(\S+)\s*(.*)/', $text, $matches)) {
             $this->sendMessage($user->getTelegramId(), 'Пожалуйста, укажите URL и теги в формате: /add URL #тег1 #тег2');
 
             return;
