@@ -26,8 +26,14 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite
           coverage: none
 
-      - name: Copy .env.test
-        run: php -r "file_exists('.env.test') || copy('.env.test.dist', '.env.test');"
+      - name: Create .env files
+        run: |
+          echo "APP_ENV=test" > .env
+          echo "APP_SECRET=test" >> .env
+          echo "DATABASE_URL=sqlite:///%kernel.project_dir%/var/test.db" >> .env
+          echo "TELEGRAM_BOT_TOKEN=test_token" >> .env
+          echo "TELEGRAM_WEBHOOK_SECRET=test_secret" >> .env
+          cp .env.test.dist .env.test
 
       - name: Get composer cache directory
         id: composer-cache
@@ -67,6 +73,14 @@ jobs:
           php-version: '8.2'
           coverage: none
 
+      - name: Create .env file
+        run: |
+          echo "APP_ENV=dev" > .env
+          echo "APP_SECRET=test" >> .env
+          echo "DATABASE_URL=sqlite:///%kernel.project_dir%/var/app.db" >> .env
+          echo "TELEGRAM_BOT_TOKEN=test_token" >> .env
+          echo "TELEGRAM_WEBHOOK_SECRET=test_secret" >> .env
+
       - name: Install dependencies
         run: |
           composer install --prefer-dist --no-progress
@@ -91,6 +105,14 @@ jobs:
         with:
           php-version: '8.2'
           coverage: none
+
+      - name: Create .env file
+        run: |
+          echo "APP_ENV=dev" > .env
+          echo "APP_SECRET=test" >> .env
+          echo "DATABASE_URL=sqlite:///%kernel.project_dir%/var/app.db" >> .env
+          echo "TELEGRAM_BOT_TOKEN=test_token" >> .env
+          echo "TELEGRAM_WEBHOOK_SECRET=test_secret" >> .env
 
       - name: Install dependencies
         run: |
