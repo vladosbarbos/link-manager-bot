@@ -242,6 +242,84 @@ APP_ENV=dev
 docker-compose exec php composer install
 ```
 
+### Статический анализ и стиль кода
+
+#### PHPStan (Статический анализ)
+
+Проект использует PHPStan для статического анализа кода. 
+
+```bash
+# Запуск полной проверки
+docker-compose exec php vendor/bin/phpstan analyse
+
+# Запуск с определенным уровнем строгости (0-9)
+docker-compose exec php vendor/bin/phpstan analyse --level=8
+
+# Анализ конкретного файла или директории
+docker-compose exec php vendor/bin/phpstan analyse src/Controller/HealthCheckController.php
+
+# Показать ошибки в более читаемом формате
+docker-compose exec php vendor/bin/phpstan analyse --error-format=table
+```
+
+#### PHP CS Fixer (Стиль кода)
+
+Для автоматического исправления стиля кода используется PHP CS Fixer.
+
+```bash
+# Проверка стиля без внесения изменений
+docker-compose exec php vendor/bin/php-cs-fixer fix --dry-run --diff
+
+# Автоматическое исправление стиля кода
+docker-compose exec php vendor/bin/php-cs-fixer fix
+
+# Исправление конкретного файла
+docker-compose exec php vendor/bin/php-cs-fixer fix src/Controller/HealthCheckController.php
+
+# Исправление с определенным набором правил
+docker-compose exec php vendor/bin/php-cs-fixer fix --rules=@Symfony
+
+# Показать список всех доступных правил
+docker-compose exec php vendor/bin/php-cs-fixer describe
+```
+
+Конфигурация PHP CS Fixer находится в файле `.php-cs-fixer.dist.php`:
+
+```php
+<?php
+
+$finder = (new PhpCsFixer\Finder())
+    ->in(__DIR__)
+    ->exclude('var')
+    ->exclude('vendor')
+;
+
+return (new PhpCsFixer\Config())
+    ->setRules([
+        '@Symfony' => true,
+        'array_syntax' => ['syntax' => 'short'],
+        'ordered_imports' => true,
+        'no_unused_imports' => true,
+    ])
+    ->setFinder($finder)
+;
+```
+
+#### Рекомендуемый рабочий процесс
+
+1. Запустите PHP CS Fixer для автоматического исправления стиля кода:
+```bash
+docker-compose exec php vendor/bin/php-cs-fixer fix
+```
+
+2. Запустите PHPStan для проверки потенциальных проблем:
+```bash
+docker-compose exec php vendor/bin/phpstan analyse
+```
+
+3. Исправьте найденные PHPStan проблемы вручную
+4. Повторите процесс при необходимости
+
 ### Запуск тестов
 
 ```bash

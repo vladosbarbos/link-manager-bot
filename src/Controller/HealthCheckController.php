@@ -2,16 +2,18 @@
 
 namespace App\Controller;
 
+use Doctrine\DBAL\Connection;
+use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
-use Doctrine\DBAL\Connection;
 
 class HealthCheckController extends AbstractController
 {
     public function __construct(
-        private readonly Connection $connection
-    ) {}
+        private readonly Connection $connection,
+    ) {
+    }
 
     #[Route('/health', name: 'app_health_check', methods: ['GET'])]
     public function check(): JsonResponse
@@ -27,9 +29,9 @@ class HealthCheckController extends AbstractController
         try {
             // Проверяем подключение к базе данных
             $this->connection->executeQuery('SELECT 1');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $status['status'] = 'error';
-            $status['database'] = 'error: ' . $e->getMessage();
+            $status['database'] = 'error: '.$e->getMessage();
         }
 
         return new JsonResponse($status);
@@ -45,8 +47,8 @@ class HealthCheckController extends AbstractController
             'health' => '/health',
             'endpoints' => [
                 'webhook' => '/webhook/{secret}',
-                'health' => '/health'
-            ]
+                'health' => '/health',
+            ],
         ]);
     }
-} 
+}

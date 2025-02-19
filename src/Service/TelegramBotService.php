@@ -2,9 +2,10 @@
 
 namespace App\Service;
 
-use App\Entity\User;
 use App\Entity\Link;
 use App\Entity\Tag;
+use App\Entity\User;
+use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -16,7 +17,7 @@ class TelegramBotService
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly EntityManagerInterface $entityManager,
-        private readonly string $telegramBotToken
+        private readonly string $telegramBotToken,
     ) {
         $this->token = $telegramBotToken;
     }
@@ -61,7 +62,7 @@ class TelegramBotService
 
     public function sendMessage(string $chatId, string $text): void
     {
-        $this->httpClient->request('POST', $this->apiUrl . $this->token . '/sendMessage', [
+        $this->httpClient->request('POST', $this->apiUrl.$this->token.'/sendMessage', [
             'json' => [
                 'chat_id' => $chatId,
                 'text' => $text,
@@ -74,16 +75,17 @@ class TelegramBotService
     {
         // Парсинг URL и тегов из текста
         preg_match('/\/add\s+(\S+)\s*(.*)/', $text, $matches);
-        
+
         if (count($matches) < 2) {
             $this->sendMessage($user->getTelegramId(), 'Пожалуйста, укажите URL и теги в формате: /add URL #тег1 #тег2');
+
             return;
         }
 
         $url = $matches[1];
         $tagStrings = [];
         preg_match_all('/#(\w+)/', $matches[2], $tagMatches);
-        
+
         if (isset($tagMatches[1])) {
             $tagStrings = $tagMatches[1];
         }
@@ -119,13 +121,14 @@ class TelegramBotService
     {
         preg_match('/\/settime\s+(\d{1,2}):(\d{2})/', $text, $matches);
 
-        if (count($matches) !== 3) {
+        if (3 !== count($matches)) {
             $this->sendMessage($user->getTelegramId(), 'Пожалуйста, укажите время в формате: /settime ЧЧ:ММ');
+
             return;
         }
 
-        $time = new \DateTime();
-        $time->setTime((int)$matches[1], (int)$matches[2]);
+        $time = new DateTime();
+        $time->setTime((int) $matches[1], (int) $matches[2]);
 
         $user->setNotificationTime($time);
         $this->entityManager->flush();
@@ -155,4 +158,4 @@ class TelegramBotService
 
         $this->sendMessage($chatId, $message);
     }
-} 
+}

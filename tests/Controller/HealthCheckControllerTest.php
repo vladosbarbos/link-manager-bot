@@ -13,9 +13,9 @@ class HealthCheckControllerTest extends WebTestCase
 
         $this->assertResponseIsSuccessful();
         $this->assertJson($client->getResponse()->getContent());
-        
+
         $response = json_decode($client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('status', $response);
         $this->assertEquals('ok', $response['status']);
     }
-} 
+}

@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use DateTimeImmutable;
+use DateTimeInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -23,10 +25,10 @@ class User
     private ?string $username = null;
 
     #[ORM\Column(type: 'time', nullable: true)]
-    private ?\DateTimeInterface $notificationTime = null;
+    private ?DateTimeInterface $notificationTime = null;
 
     #[ORM\Column]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Link::class)]
     private Collection $links;
@@ -38,8 +40,8 @@ class User
     {
         $this->links = new ArrayCollection();
         $this->tags = new ArrayCollection();
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
     }
 
     // Геттеры и сеттеры
-} 
+}

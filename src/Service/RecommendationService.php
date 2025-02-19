@@ -2,29 +2,30 @@
 
 namespace App\Service;
 
-use App\Entity\User;
 use App\Entity\Link;
 use App\Entity\Tag;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 
 class RecommendationService
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager
-    ) {}
+        private readonly EntityManagerInterface $entityManager,
+    ) {
+    }
 
     public function getRecommendations(User $user, int $limit = 5): array
     {
         // Получаем непрочитанные ссылки пользователя
         $unreadLinks = $this->getUnreadLinks($user);
-        
+
         if (empty($unreadLinks)) {
             return [];
         }
 
         // Получаем популярные теги пользователя
         $popularTags = $this->getPopularUserTags($user);
-        
+
         // Сортируем ссылки по релевантности
         return $this->sortLinksByRelevance($unreadLinks, $popularTags, $limit);
     }
@@ -60,7 +61,7 @@ class RecommendationService
 
         $tags = [];
         foreach ($result as $row) {
-            $tags[$row['name']] = (int)$row['usage_count'];
+            $tags[$row['name']] = (int) $row['usage_count'];
         }
 
         return $tags;
@@ -72,7 +73,7 @@ class RecommendationService
 
         foreach ($links as $link) {
             $score = 0;
-            
+
             /** @var Tag $tag */
             foreach ($link->getTags() as $tag) {
                 // Если тег есть в популярных, увеличиваем счет
@@ -87,7 +88,7 @@ class RecommendationService
 
             $scoredLinks[] = [
                 'link' => $link,
-                'score' => $score
+                'score' => $score,
             ];
         }
 
@@ -98,7 +99,7 @@ class RecommendationService
 
         // Возвращаем только ссылки, без счета
         return array_slice(
-            array_map(fn($item) => $item['link'], $scoredLinks),
+            array_map(fn ($item) => $item['link'], $scoredLinks),
             0,
             $limit
         );
@@ -114,7 +115,7 @@ class RecommendationService
     {
         // Получаем рекомендации
         $recommendations = $this->getRecommendations($user, $limit);
-        
+
         // Если рекомендаций недостаточно, добавляем самые старые непрочитанные ссылки
         if (count($recommendations) < $limit) {
             $oldestLinks = $this->entityManager->createQueryBuilder()
@@ -136,4 +137,4 @@ class RecommendationService
 
         return $recommendations;
     }
-} 
+}

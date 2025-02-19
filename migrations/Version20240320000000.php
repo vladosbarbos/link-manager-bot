@@ -58,13 +58,13 @@ final class Version20240320000000 extends AbstractMigration
 
         $this->addSql('ALTER TABLE links ADD CONSTRAINT FK_2CF8D8B7A76ED395 
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE');
-        
+
         $this->addSql('ALTER TABLE tags ADD CONSTRAINT FK_6FBC9426A76ED395 
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE');
-        
+
         $this->addSql('ALTER TABLE link_tags ADD CONSTRAINT FK_D194F33EADA40271 
             FOREIGN KEY (link_id) REFERENCES links (id) ON DELETE CASCADE');
-        
+
         $this->addSql('ALTER TABLE link_tags ADD CONSTRAINT FK_D194F33EBAD26311 
             FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE');
     }
@@ -80,4 +80,4 @@ final class Version20240320000000 extends AbstractMigration
         $this->addSql('DROP TABLE tags');
         $this->addSql('DROP TABLE link_tags');
     }
-} 
+}

@@ -5,7 +5,9 @@ namespace App\Command;
 use App\Entity\User;
 use App\Service\RecommendationService;
 use App\Service\TelegramBotService;
+use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
+use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -20,16 +22,16 @@ class SendDailyNotificationsCommand extends Command
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly RecommendationService $recommendationService,
-        private readonly TelegramBotService $telegramBotService
+        private readonly TelegramBotService $telegramBotService,
     ) {
         parent::__construct();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $currentTime = new \DateTime();
-        $currentHour = (int)$currentTime->format('H');
-        $currentMinute = (int)$currentTime->format('i');
+        $currentTime = new DateTime();
+        $currentHour = (int) $currentTime->format('H');
+        $currentMinute = (int) $currentTime->format('i');
 
         // Получаем пользователей, у которых установлено время уведомлений на текущий час
         $users = $this->entityManager->createQueryBuilder()
@@ -61,7 +63,7 @@ class SendDailyNotificationsCommand extends Command
         $message = "🎯 Ваши рекомендации на сегодня:\n\n";
         foreach ($recommendations as $link) {
             $tags = array_map(
-                fn($tag) => '#' . $tag->getName(),
+                fn ($tag) => '#'.$tag->getName(),
                 $link->getTags()->toArray()
             );
 
@@ -75,11 +77,11 @@ class SendDailyNotificationsCommand extends Command
         try {
             $this->telegramBotService->sendMessage($user->getTelegramId(), $message);
             $output->writeln(sprintf('Уведомление отправлено пользователю %s', $user->getUsername() ?? $user->getTelegramId()));
-        } catch (\Exception $e) {
-            $output->writeln(sprintf('Ошибка отправки уведомления пользователю %s: %s', 
+        } catch (Exception $e) {
+            $output->writeln(sprintf('Ошибка отправки уведомления пользователю %s: %s',
                 $user->getUsername() ?? $user->getTelegramId(),
                 $e->getMessage()
             ));
         }
     }
-} 
+}

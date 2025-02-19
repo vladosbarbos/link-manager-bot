@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\TagRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -24,7 +25,7 @@ class Tag
     private ?User $user = null;
 
     #[ORM\Column]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
     #[ORM\ManyToMany(targetEntity: Link::class, mappedBy: 'tags')]
     private Collection $links;
@@ -32,8 +33,8 @@ class Tag
     public function __construct()
     {
         $this->links = new ArrayCollection();
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
     }
 
     // Геттеры и сеттеры
-} 
+}

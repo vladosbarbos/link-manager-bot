@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\LinkRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -33,7 +34,7 @@ class Link
     private bool $isRead = false;
 
     #[ORM\Column]
-    private \DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
     #[ORM\ManyToMany(targetEntity: Tag::class, inversedBy: 'links')]
     private Collection $tags;
@@ -41,8 +42,8 @@ class Link
     public function __construct()
     {
         $this->tags = new ArrayCollection();
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
     }
 
     // Геттеры и сеттеры
-} 
+}

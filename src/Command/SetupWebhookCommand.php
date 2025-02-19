@@ -4,9 +4,9 @@ namespace App\Command;
 
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 #[AsCommand(
@@ -18,7 +18,7 @@ class SetupWebhookCommand extends Command
     public function __construct(
         private readonly string $telegramBotToken,
         private readonly string $webhookSecret,
-        private readonly HttpClientInterface $httpClient
+        private readonly HttpClientInterface $httpClient,
     ) {
         parent::__construct();
     }
@@ -31,7 +31,7 @@ class SetupWebhookCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $url = $input->getArgument('url');
-        $webhookUrl = rtrim($url, '/') . '/webhook/' . $this->webhookSecret;
+        $webhookUrl = rtrim($url, '/').'/webhook/'.$this->webhookSecret;
 
         $response = $this->httpClient->request(
             'POST',
@@ -39,8 +39,8 @@ class SetupWebhookCommand extends Command
             [
                 'json' => [
                     'url' => $webhookUrl,
-                    'allowed_updates' => ['message']
-                ]
+                    'allowed_updates' => ['message'],
+                ],
             ]
         );
 
@@ -48,10 +48,12 @@ class SetupWebhookCommand extends Command
 
         if ($result['ok']) {
             $output->writeln('<info>Вебхук успешно установлен!</info>');
+
             return Command::SUCCESS;
         }
 
-        $output->writeln('<error>Ошибка при установке вебхука: ' . ($result['description'] ?? 'Неизвестная ошибка') . '</error>');
+        $output->writeln('<error>Ошибка при установке вебхука: '.($result['description'] ?? 'Неизвестная ошибка').'</error>');
+
         return Command::FAILURE;
     }
-} 
+}
