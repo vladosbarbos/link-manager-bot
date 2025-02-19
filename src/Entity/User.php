@@ -30,9 +30,15 @@ class User
     #[ORM\Column]
     private DateTimeImmutable $createdAt;
 
+    /**
+     * @var Collection<int, Link>
+     */
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Link::class)]
     private Collection $links;
 
+    /**
+     * @var Collection<int, Tag>
+     */
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Tag::class)]
     private Collection $tags;
 
@@ -43,5 +49,65 @@ class User
         $this->createdAt = new DateTimeImmutable();
     }
 
-    // Геттеры и сеттеры
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getTelegramId(): string
+    {
+        return $this->telegramId;
+    }
+
+    public function setTelegramId(string $telegramId): self
+    {
+        $this->telegramId = $telegramId;
+
+        return $this;
+    }
+
+    public function getUsername(): ?string
+    {
+        return $this->username;
+    }
+
+    public function setUsername(?string $username): self
+    {
+        $this->username = $username;
+
+        return $this;
+    }
+
+    public function getNotificationTime(): ?DateTimeInterface
+    {
+        return $this->notificationTime;
+    }
+
+    public function setNotificationTime(?DateTimeInterface $notificationTime): self
+    {
+        $this->notificationTime = $notificationTime;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    /**
+     * @return Collection<int, Link>
+     */
+    public function getLinks(): Collection
+    {
+        return $this->links;
+    }
+
+    /**
+     * @return Collection<int, Tag>
+     */
+    public function getTags(): Collection
+    {
+        return $this->tags;
+    }
 }

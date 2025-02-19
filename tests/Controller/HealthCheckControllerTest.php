@@ -12,9 +12,11 @@ class HealthCheckControllerTest extends WebTestCase
         $client->request('GET', '/health');
 
         $this->assertResponseIsSuccessful();
-        $this->assertJson($client->getResponse()->getContent());
 
-        $response = json_decode($client->getResponse()->getContent(), true);
+        $content = (string) $client->getResponse()->getContent();
+        $this->assertJson($content);
+
+        $response = json_decode($content, true);
         $this->assertArrayHasKey('status', $response);
         $this->assertEquals('ok', $response['status']);
     }

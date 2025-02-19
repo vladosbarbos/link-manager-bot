@@ -27,6 +27,9 @@ class Tag
     #[ORM\Column]
     private DateTimeImmutable $createdAt;
 
+    /**
+     * @var Collection<int, Link>
+     */
     #[ORM\ManyToMany(targetEntity: Link::class, mappedBy: 'tags')]
     private Collection $links;
 
@@ -36,5 +39,64 @@ class Tag
         $this->createdAt = new DateTimeImmutable();
     }
 
-    // Геттеры и сеттеры
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): self
+    {
+        $this->user = $user;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    /**
+     * @return Collection<int, Link>
+     */
+    public function getLinks(): Collection
+    {
+        return $this->links;
+    }
+
+    public function addLink(Link $link): self
+    {
+        if (!$this->links->contains($link)) {
+            $this->links->add($link);
+            $link->addTag($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLink(Link $link): self
+    {
+        if ($this->links->removeElement($link)) {
+            $link->removeTag($this);
+        }
+
+        return $this;
+    }
 }
