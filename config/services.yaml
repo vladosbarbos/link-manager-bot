@@ -1,0 +1,22 @@
+parameters:
+    app.telegram_webhook_secret: '%env(TELEGRAM_WEBHOOK_SECRET)%'
+    app.telegram_bot_token: '%env(TELEGRAM_BOT_TOKEN)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            string $telegramBotToken: '%app.telegram_bot_token%'
+            string $webhookSecret: '%app.telegram_webhook_secret%'
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    App\Controller\:
+        resource: '../src/Controller'
+        tags: ['controller.service_arguments'] 
