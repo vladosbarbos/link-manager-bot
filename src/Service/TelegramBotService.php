@@ -79,12 +79,12 @@ class TelegramBotService
         }
 
         $url = $matches[1];
-        $tagStrings = [];
-        preg_match_all('/#(\w+)/', $matches[2] ?? '', $tagMatches);
 
-        if (isset($tagMatches[1])) {
-            $tagStrings = $tagMatches[1];
-        }
+        // $matches[2] всегда существует после успешного preg_match
+        preg_match_all('/#(\w+)/', $matches[2], $tagMatches);
+
+        // $tagMatches[1] всегда существует после preg_match_all
+        $tagStrings = $tagMatches[1];
 
         // Создание ссылки
         $link = new Link();

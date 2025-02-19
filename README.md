@@ -248,61 +248,63 @@ docker-compose exec php composer install
 
 Проект использует PHPStan для статического анализа кода. 
 
+#### Запуск проверок
+
 ```bash
-# Запуск полной проверки
+# Базовая проверка
 docker-compose exec php vendor/bin/phpstan analyse
 
-# Запуск с определенным уровнем строгости (0-9)
-docker-compose exec php vendor/bin/phpstan analyse --level=8
+# Подробный вывод с описанием ошибок
+docker-compose exec php vendor/bin/phpstan analyse --error-format=table
 
-# Анализ конкретного файла или директории
+# Вывод ошибок с указанием строк кода
+docker-compose exec php vendor/bin/phpstan analyse --error-format=prettyJson
+
+# Проверка с максимальным уровнем подробностей
+docker-compose exec php vendor/bin/phpstan analyse -v
+
+# Проверка с выводом прогресса
+docker-compose exec php vendor/bin/phpstan analyse --debug
+
+# Проверка конкретного файла или директории
 docker-compose exec php vendor/bin/phpstan analyse src/Controller/HealthCheckController.php
 
-# Показать ошибки в более читаемом формате
-docker-compose exec php vendor/bin/phpstan analyse --error-format=table
+# Генерация отчета в формате HTML
+docker-compose exec php vendor/bin/phpstan analyse --error-format=html > phpstan-report.html
 ```
 
-#### PHP CS Fixer (Стиль кода)
+#### Уровни проверки
 
-Для автоматического исправления стиля кода используется PHP CS Fixer.
+Можно указать уровень строгости проверки (0-9):
 
 ```bash
-# Проверка стиля без внесения изменений
-docker-compose exec php vendor/bin/php-cs-fixer fix --dry-run --diff
+# Минимальная проверка
+docker-compose exec php vendor/bin/phpstan analyse --level=0
 
-# Автоматическое исправление стиля кода
-docker-compose exec php vendor/bin/php-cs-fixer fix
-
-# Исправление конкретного файла
-docker-compose exec php vendor/bin/php-cs-fixer fix src/Controller/HealthCheckController.php
-
-# Исправление с определенным набором правил
-docker-compose exec php vendor/bin/php-cs-fixer fix --rules=@Symfony
-
-# Показать список всех доступных правил
-docker-compose exec php vendor/bin/php-cs-fixer describe
+# Максимальная строгость
+docker-compose exec php vendor/bin/phpstan analyse --level=9
 ```
 
-Конфигурация PHP CS Fixer находится в файле `.php-cs-fixer.dist.php`:
+Текущий уровень проверки указан в `phpstan.neon` (сейчас уровень 8).
+
+#### Игнорирование ошибок
+
+Для игнорирования определенных ошибок можно использовать аннотации в коде:
 
 ```php
-<?php
+/** @phpstan-ignore-next-line */
+$someCode = $this->doSomething();
 
-$finder = (new PhpCsFixer\Finder())
-    ->in(__DIR__)
-    ->exclude('var')
-    ->exclude('vendor')
-;
+/** @phpstan-ignore-line */
+$result = $this->riskyOperation();
+```
 
-return (new PhpCsFixer\Config())
-    ->setRules([
-        '@Symfony' => true,
-        'array_syntax' => ['syntax' => 'short'],
-        'ordered_imports' => true,
-        'no_unused_imports' => true,
-    ])
-    ->setFinder($finder)
-;
+Или добавить правила исключения в `phpstan.neon`:
+
+```yaml
+parameters:
+    ignoreErrors:
+        - '#Parameter \#1 \$value of method .* expects string, mixed given.#'
 ```
 
 #### Рекомендуемый рабочий процесс
