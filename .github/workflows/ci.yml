@@ -20,8 +20,11 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite
           coverage: none
+
+      - name: Copy .env.test
+        run: php -r "file_exists('.env.test') || copy('.env.test.dist', '.env.test');"
 
       - name: Get composer cache directory
         id: composer-cache
@@ -37,8 +40,15 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
+      - name: Create test database
+        run: |
+          mkdir -p var
+          touch var/test.db
+
       - name: Run test suite
-        run: vendor/bin/phpunit
+        run: |
+          php bin/console --env=test doctrine:schema:create
+          php bin/phpunit
 
   static-analysis:
     name: Static Analysis
@@ -55,8 +65,13 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
+      - name: Generate container for PHPStan
+        run: |
+          php bin/console cache:clear --env=dev
+          php bin/console cache:warmup --env=dev
+
       - name: Run PHPStan
-        run: composer phpstan
+        run: vendor/bin/phpstan analyse -c phpstan.neon
 
   coding-standards:
     name: Coding Standards
@@ -74,4 +89,4 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Check coding standards
-        run: composer cs-check 
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff 
