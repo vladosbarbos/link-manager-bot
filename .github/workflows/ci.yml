@@ -26,6 +26,7 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite
           coverage: none
 
+#TODO copy from .env.dev
       - name: Create .env files
         run: |
           echo "APP_ENV=test" > .env
