@@ -58,7 +58,23 @@ phpstan:
 	docker-compose exec php vendor/bin/phpstan analyse -c phpstan.neon
 
 ## Запустить все проверки (CI)
-ci: cs-check phpstan test
+ci: validate-composer cs-check phpstan test
+
+## Проверить composer.json
+validate-composer:
+	docker-compose exec php composer validate
+
+## Запустить полную проверку CI (как в GitHub Actions)
+ci-full: validate-composer prepare-test-env cs-check phpstan test
+
+## Подготовить окружение для тестов
+prepare-test-env:
+	docker-compose exec php rm -rf var/cache/* var/test.db
+	docker-compose exec php mkdir -p var
+	docker-compose exec php touch var/test.db
+	docker-compose exec php bin/console --env=test doctrine:schema:create
+	docker-compose exec php bin/console cache:clear --env=test
+	docker-compose exec php bin/console cache:warmup --env=test
 
 ## Очистить кеш
 cache-clear:
